@@ -14,8 +14,9 @@ func (app *Config) routes() http.Handler {
 	// set up middleware
 	mux.Use(middleware.Recoverer)
 
-	mux.Get("/search_recipe", app.SearchRecipe)
-	mux.Get("/search_recipe_by_ingredient", app.SearchRecipesByIngredients)
+	mux.Get("/recipe", app.SearchRecipe)
+	mux.Get("/recipe/{id}", app.GetRecipe)
+	mux.Get("/recipe_by_ingredient", app.SearchRecipesByIngredients)
 	mux.Get("/search_ingredient", app.SearchIngredient)
 
 	return mux

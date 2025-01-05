@@ -10,7 +10,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/unrolled/render"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -38,11 +37,6 @@ func (app *Config) serve() {
 	if err != nil {
 		log.Panic(err)
 	}
-}
-
-func (app *Config) getResponse() *render.Render {
-	response := render.New(render.Options{StreamingJSON: true})
-	return response
 }
 
 func (app *Config) listenForShutdown() {
@@ -77,9 +71,3 @@ func (app *Config) listenForErrors() {
 		}
 	}
 }
-
-// func (app *Config) success(w http.ResponseWriter, data any) {
-// 	response := app.getResponse()
-// 	_ = len(data)
-// 	response.JSON(w, 200, data)
-// }

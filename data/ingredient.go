@@ -13,9 +13,10 @@ type Ingredient struct {
 	Facts  string `json:"facts"`
 }
 
-func (ingredient *Ingredient) SearchIngredient() (ingredients []*Ingredient, err error) {
+func (ingredient *Ingredient) SearchIngredient(offset, limit int) (ingredients []*Ingredient, err error) {
 	name := fmt.Sprintf("%%%s%%", ingredient.Name)
 	err = db.Where("ingredients.name ILIKE ?", name).
+		Offset(offset).Limit(limit).
 		Find(&ingredients).Error
 	return ingredients, err
 }

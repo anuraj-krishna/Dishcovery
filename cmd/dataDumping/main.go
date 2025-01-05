@@ -1,34 +1,19 @@
 package main
 
 import (
+	"dishcovery/data"
+	"dishcovery/handler/dbHandler"
 	"encoding/csv"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
-	"gorm.io/driver/postgres"
+	_ "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 var db *gorm.DB
-
-// Recipe and Ingredient models remain the same
-
-func initDB() {
-	var err error
-	dsn := "host=localhost user=admin password=localhost dbname=dishcovery_db port=5432 sslmode=disable"
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		fmt.Printf("Failed to connect to the database: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Migrate the schema
-	if err := db.AutoMigrate(&Recipe{}, &Ingredient{}); err != nil {
-		fmt.Printf("Failed to migrate the database: %v\n", err)
-		os.Exit(1)
-	}
-}
 
 func loadCSVData(filename string) error {
 	// Open the CSV file in the current directory
@@ -47,8 +32,14 @@ func loadCSVData(filename string) error {
 
 	// Skip header row and process each record
 	for _, record := range records[1:] {
+		// Parse the rating from string to float32
+		rating, err := strconv.ParseFloat(record[8], 32)
+		if err != nil {
+			fmt.Printf("Failed to parse rating for recipe %s: %v\n", record[0], err)
+			continue
+		}
 		// Create a new recipe object
-		recipe := Recipe{
+		recipe := data.Recipe{
 			Name:          record[0],
 			Steps:         record[1],
 			Photos:        record[2],
@@ -56,16 +47,19 @@ func loadCSVData(filename string) error {
 			Facts:         record[4],
 			OriginCountry: record[5],
 			OriginStory:   record[6],
+			IsVeg:         strings.ToLower(record[7]) == "true",
+			Rating:        float32(rating),
 		}
 
 		// Parse ingredients and add to the recipe
-		ingredientNames := strings.Split(record[7], ",")
+		ingredientNames := strings.Split(record[9], ",")
 		for _, ingredientName := range ingredientNames {
 			ingredientName = strings.TrimSpace(ingredientName)
-			ingredient := Ingredient{Name: ingredientName}
+
+			ingredient := data.Ingredient{Name: ingredientName}
 
 			// Save ingredient to DB if not exists
-			db.FirstOrCreate(&ingredient, Ingredient{Name: ingredientName})
+			db.FirstOrCreate(&ingredient, data.Ingredient{Name: ingredientName})
 			recipe.Ingredients = append(recipe.Ingredients, ingredient)
 		}
 
@@ -79,7 +73,8 @@ func loadCSVData(filename string) error {
 }
 
 func main() {
-	initDB() // Initialize the database
+	// Initialize the database
+	db = dbHandler.InitDB()
 
 	// Load CSV data from the current directory (adjust the filename as needed)
 	filename := "./recipes.csv" // Make sure the file is in the current directory

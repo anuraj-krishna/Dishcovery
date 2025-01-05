@@ -35,7 +35,9 @@ func connectToDB() *gorm.DB {
 		},
 	)
 
-	dsn := "host=localhost user=admin password=localhost dbname=dishcovery_db port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	// dsn := os.Getenv("DATABASE_URL")
+	// dsn := "host=localhost user=admin password=localhost dbname=dishcovery_db port=5432 sslmode=disable"
+	dsn := "host=dpg-cttamo1opnds73cb4ht0-a.singapore-postgres.render.com user=admin password=8fE8VAP0wcipOjLwVXPXEB9jLcubjTVi dbname=dishcovery_db port=5432"
 
 	for {
 		connection, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -52,7 +54,7 @@ func connectToDB() *gorm.DB {
 			return connection
 		}
 
-		if counts > 10 {
+		if counts > 3 {
 			return nil
 		}
 

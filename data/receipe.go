@@ -1,41 +1,48 @@
 package data
 
 import (
+	"errors"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 type Recipe struct {
-	gorm.Model
+	ID            uint         `gorm:"primarykey" json:"id"`
 	Name          string       `json:"name"`
 	Ingredients   []Ingredient `gorm:"many2many:recipe_ingredients;" json:"-"` // Many-to-many relationship
-	Steps         string       `json:"steps"`
-	Photos        string       `json:"photos"`
-	YoutubeLink   string       `json:"youtube_link"`
-	Facts         string       `json:"facts"`
-	IsVeg         bool         `json:"is_veg"`
-	Rating        int8         `json:"rating"`
-	OriginCountry string       `json:"origin_country"`
-	OriginStory   string       `json:"origin_story"`
+	Steps         string       `json:"steps,omitempty"`
+	Photos        string       `json:"photos,omitempty"`
+	YoutubeLink   string       `json:"youtube_link,omitempty"`
+	Facts         string       `json:"facts,omitempty"`
+	IsVeg         bool         `json:"is_veg,omitempty"`
+	Rating        float32      `json:"rating,omitempty"`
+	OriginCountry string       `json:"origin_country,omitempty"`
+	OriginStory   string       `json:"origin_story,omitempty"`
+	CreatedAt     *time.Time   `json:"created_at,omitempty"`
+	UpdatedAt     *time.Time   `json:"updated_at,omitempty"`
 }
 
-func (recipe *Recipe) SearchRecipe(queryParams url.Values) ([]Recipe, error) {
-	query := queryParams.Get("name")
-	isVeg := queryParams.Get("is_veg")
-	originCountry := queryParams.Get("origin_country")
-	sortBy := queryParams.Get("sort_by")
-	pageStr := queryParams.Get("page")
-	limitStr := queryParams.Get("limit")
+func (recipe *Recipe) GetRecipe(recipeID string) (*Recipe, error) {
+	if err := db.Preload("Ingredients").First(&recipe, recipeID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, errors.New("Recipe not found")
+		}
+		return nil, err
+	}
+	return recipe, nil
+}
+
+func (recipe *Recipe) SearchRecipe(isVeg, sortBy string, offset, limit int) ([]Recipe, error) {
 
 	var recipes []Recipe
-	queryBuilder := db.Preload("Ingredients")
+	queryBuilder := db.Select("id, name, rating, is_veg, photos, origin_country")
 
-	if query != "" {
-		queryBuilder = queryBuilder.Where("name ILIKE ?", "%"+query+"%")
+	if recipe.Name != "" {
+		queryBuilder = queryBuilder.Where("name ILIKE ?", "%"+recipe.Name+"%")
 	}
 
 	if isVeg != "" {
@@ -45,49 +52,34 @@ func (recipe *Recipe) SearchRecipe(queryParams url.Values) ([]Recipe, error) {
 		}
 	}
 
-	if originCountry != "" {
-		queryBuilder = queryBuilder.Where("origin_country ILIKE ?", "%"+originCountry+"%")
+	if recipe.OriginCountry != "" {
+		queryBuilder = queryBuilder.Where("origin_country ILIKE ?", "%"+recipe.OriginCountry+"%")
 	}
 
 	if sortBy == "rating" {
 		queryBuilder = queryBuilder.Order("rating DESC")
 	}
 
-	page := 1
-	limit := 10
-	if pageStr != "" {
-		parsedPage, err := strconv.Atoi(pageStr)
-		if err == nil && parsedPage > 0 {
-			page = parsedPage
-		}
-	}
-
-	if limitStr != "" {
-		parsedLimit, err := strconv.Atoi(limitStr)
-		if err == nil && parsedLimit > 0 {
-			limit = parsedLimit
-		}
-	}
-
-	offset := (page - 1) * limit
 	queryBuilder = queryBuilder.Offset(offset).Limit(limit)
-
 	err := queryBuilder.Find(&recipes).Error
 
 	return recipes, err
 }
 
-func (recipe *Recipe) SearchRecipesByIngredient(ingredientId string) ([]Recipe, error) {
+func (recipe *Recipe) SearchRecipesByIngredient(ingredientId string, offset, limit int) ([]Recipe, error) {
 	var recipes []Recipe
 	q := fmt.Sprintf("ingredients.id in (%s)", ingredientId)
 	ingredientIds := strings.Split(ingredientId, ",")
 	ingredientCount := len(ingredientIds)
+
 	err := db.Preload("Ingredients").
 		Joins("INNER JOIN recipe_ingredients ON recipes.id = recipe_ingredients.recipe_id").
 		Joins("INNER JOIN ingredients ON ingredients.id = recipe_ingredients.ingredient_id").
 		Where(q).
 		Group("recipes.id").
 		Having("COUNT(DISTINCT ingredients.id) = ?", ingredientCount).
+		Offset(offset).Limit(limit).
 		Find(&recipes).Error
+
 	return recipes, err
 }
