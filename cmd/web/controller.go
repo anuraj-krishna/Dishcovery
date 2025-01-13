@@ -16,7 +16,7 @@ func (app *Config) SearchRecipe(w http.ResponseWriter, r *http.Request) {
 
 	recipe := app.Models.Recipe
 	recipe.Name = queryParams.Get("name")
-	recipe.OriginCountry = queryParams.Get("origin_country")
+	recipe.CusineType = queryParams.Get("cusine_type")
 
 	rslt, err := recipe.SearchRecipe(isVeg, sortBy, offset, limit)
 	if err != nil {

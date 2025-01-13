@@ -2,15 +2,17 @@ package data
 
 import (
 	"fmt"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 type Ingredient struct {
-	gorm.Model
-	Name   string `json:"name"` // Ingredient name
-	Photos string `json:"photos"`
-	Facts  string `json:"facts"`
+	ID        uint       `gorm:"primarykey" json:"id"`
+	Name      string     `json:"name" gorm:"unique"` // Ingredient name
+	IsVeg     bool       `json:"is_veg,omitempty"`
+	Photos    string     `json:"photos"`
+	Facts     string     `json:"facts"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
 func (ingredient *Ingredient) SearchIngredient(offset, limit int) (ingredients []*Ingredient, err error) {

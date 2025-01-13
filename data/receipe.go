@@ -11,19 +11,22 @@ import (
 )
 
 type Recipe struct {
-	ID            uint         `gorm:"primarykey" json:"id"`
-	Name          string       `json:"name"`
-	Ingredients   []Ingredient `gorm:"many2many:recipe_ingredients;" json:"-"` // Many-to-many relationship
-	Steps         string       `json:"steps,omitempty"`
-	Photos        string       `json:"photos,omitempty"`
-	YoutubeLink   string       `json:"youtube_link,omitempty"`
-	Facts         string       `json:"facts,omitempty"`
-	IsVeg         bool         `json:"is_veg,omitempty"`
-	Rating        float32      `json:"rating,omitempty"`
-	OriginCountry string       `json:"origin_country,omitempty"`
-	OriginStory   string       `json:"origin_story,omitempty"`
-	CreatedAt     *time.Time   `json:"created_at,omitempty"`
-	UpdatedAt     *time.Time   `json:"updated_at,omitempty"`
+	ID          uint         `gorm:"primarykey" json:"id"`
+	Name        string       `json:"name" gorm:"unique"`
+	Description string       `json:"description,omitempty"`
+	Ingredients []Ingredient `gorm:"many2many:recipe_ingredients;" json:"-"` // Many-to-many relationship
+	Quantity    string       `json:"quantity,omitempty"`
+	Steps       string       `json:"steps,omitempty"`
+	Photos      string       `json:"photos,omitempty"`
+	YoutubeLink string       `json:"youtube_link,omitempty"`
+	// WebLink       string       `json:"web_link,omitempty"`
+	// Facts         string       `json:"facts,omitempty"`
+	IsVeg      bool    `json:"is_veg,omitempty"`
+	Rating     float32 `json:"rating,omitempty"`
+	CusineType string  `json:"cusine_type,omitempty"`
+	// OriginStory   string       `json:"origin_story,omitempty"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
 func (recipe *Recipe) GetRecipe(recipeID string) (*Recipe, error) {
@@ -33,13 +36,15 @@ func (recipe *Recipe) GetRecipe(recipeID string) (*Recipe, error) {
 		}
 		return nil, err
 	}
+	recipe.Steps = strings.ReplaceAll(recipe.Steps, "\"", "")
+	recipe.Quantity = strings.ReplaceAll(recipe.Quantity, "\"", "")
 	return recipe, nil
 }
 
 func (recipe *Recipe) SearchRecipe(isVeg, sortBy string, offset, limit int) ([]Recipe, error) {
 
 	var recipes []Recipe
-	queryBuilder := db.Select("id, name, rating, is_veg, photos, origin_country")
+	queryBuilder := db.Select("id, name, rating, is_veg, steps, photos, origin_country")
 
 	if recipe.Name != "" {
 		queryBuilder = queryBuilder.Where("name ILIKE ?", "%"+recipe.Name+"%")
@@ -52,8 +57,8 @@ func (recipe *Recipe) SearchRecipe(isVeg, sortBy string, offset, limit int) ([]R
 		}
 	}
 
-	if recipe.OriginCountry != "" {
-		queryBuilder = queryBuilder.Where("origin_country ILIKE ?", "%"+recipe.OriginCountry+"%")
+	if recipe.CusineType != "" {
+		queryBuilder = queryBuilder.Where("cusine_type ILIKE ?", "%"+recipe.CusineType+"%")
 	}
 
 	if sortBy == "rating" {

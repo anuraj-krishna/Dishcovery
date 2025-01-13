@@ -1,7 +1,6 @@
 package dbHandler
 
 import (
-	"dishcovery/data"
 	"log"
 	"os"
 	"time"
@@ -29,7 +28,7 @@ func connectToDB() *gorm.DB {
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
 		logger.Config{
 			SlowThreshold:             200 * time.Millisecond, // Slow SQL threshold
-			LogLevel:                  logger.Info,            // Log level
+			LogLevel:                  logger.Error,           // Log level
 			IgnoreRecordNotFoundError: false,                  // Ignore ErrRecordNotFound error for logger
 			Colorful:                  true,                   // Enable color
 		},
@@ -48,9 +47,9 @@ func connectToDB() *gorm.DB {
 		} else {
 			log.Print("connected to database!")
 			// Migrate the schema
-			if err := connection.AutoMigrate(&data.Recipe{}, &data.Ingredient{}); err != nil {
-				log.Fatalf("Failed to migrate the database: %v", err)
-			}
+			// if err := connection.AutoMigrate(&data.Recipe{}, &data.Ingredient{}); err != nil {
+			// 	log.Fatalf("Failed to migrate the database: %v", err)
+			// }
 			return connection
 		}
 
